@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuckDB UI - Offline</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦆 DuckDB UI</h1>
+            <div class="info">
+                <span id="version-info">Loading...</span>
+                <span class="status" id="status">● Connected</span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="editor-section">
+                <div class="editor-header">
+                    <h2>SQL Editor</h2>
+                    <div class="editor-actions">
+                        <button id="run-btn" class="btn btn-primary">Run Query (Ctrl+Enter)</button>
+                        <button id="clear-btn" class="btn btn-secondary">Clear</button>
+                    </div>
+                </div>
+                <textarea id="sql-editor" placeholder="Enter your SQL query here...
+
+Example:
+SELECT * FROM information_schema.tables LIMIT 10;"></textarea>
+            </div>
+
+            <div class="results-section">
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <div class="results-info">
+                        <span id="query-time"></span>
+                        <span id="row-count"></span>
+                    </div>
+                </div>
+                <div id="results-container">
+                    <div class="empty-state">
+                        <p>Run a query to see results</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="schema-panel">
+            <h3>Database Schema</h3>
+            <div id="schema-tree"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

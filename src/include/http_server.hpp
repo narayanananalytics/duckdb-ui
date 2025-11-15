@@ -71,6 +71,8 @@ private:
   // Misc
   shared_ptr<DatabaseInstance> LockDatabaseInstance();
   void InitClientFromParams(httplib::Client &);
+  std::string GetContentType(const std::string &path);
+  bool ServeStaticFile(const std::string &path, httplib::Response &res);
 
   static void CopyAndSlice(duckdb::DataChunk &source, duckdb::DataChunk &target, idx_t row_count);
 

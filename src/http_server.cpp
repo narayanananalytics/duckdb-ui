@@ -16,6 +16,8 @@
 #include <duckdb/main/client_data.hpp>
 #include <duckdb/parser/parsed_data/create_table_info.hpp>
 #include <duckdb/parser/parser.hpp>
+#include <fstream>
+#include <cstdlib>
 
 namespace duckdb {
 namespace ui {
@@ -271,47 +273,88 @@ void HttpServer::InitClientFromParams(httplib::Client &client) {
   }
 }
 
+std::string HttpServer::GetContentType(const std::string &path) {
+  if (path.ends_with(".html")) return "text/html; charset=utf-8";
+  if (path.ends_with(".css")) return "text/css; charset=utf-8";
+  if (path.ends_with(".js")) return "application/javascript; charset=utf-8";
+  if (path.ends_with(".json")) return "application/json; charset=utf-8";
+  if (path.ends_with(".png")) return "image/png";
+  if (path.ends_with(".jpg") || path.ends_with(".jpeg")) return "image/jpeg";
+  if (path.ends_with(".svg")) return "image/svg+xml";
+  if (path.ends_with(".ico")) return "image/x-icon";
+  if (path.ends_with(".woff")) return "font/woff";
+  if (path.ends_with(".woff2")) return "font/woff2";
+  if (path.ends_with(".ttf")) return "font/ttf";
+  return "text/plain";
+}
+
+bool HttpServer::ServeStaticFile(const std::string &path, httplib::Response &res) {
+  // Get the extension installation directory from environment or use compile-time path
+  std::string static_dir;
+
+  // Try to get the path from environment variable first
+  const char* ui_static_path = std::getenv("DUCKDB_UI_STATIC_PATH");
+  if (ui_static_path) {
+    static_dir = ui_static_path;
+  } else {
+    // Default to ui_static directory relative to the extension
+    static_dir = "ui_static";
+  }
+
+  std::string file_path = static_dir + path;
+
+  // Security: prevent directory traversal
+  if (path.find("..") != std::string::npos) {
+    res.status = 403;
+    res.set_content("Forbidden", "text/plain");
+    return false;
+  }
+
+  std::ifstream file(file_path, std::ios::binary);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  std::string content((std::istreambuf_iterator<char>(file)),
+                      std::istreambuf_iterator<char>());
+  file.close();
+
+  res.set_content(content, GetContentType(path));
+  res.set_header("Cache-Control", "no-cache");
+  return true;
+}
+
 void HttpServer::HandleGet(const httplib::Request &req,
                            httplib::Response &res) {
-  // Create HTTP client to remote URL
-  // TODO: Can this be created once and shared?
-  httplib::Client client(remote_url);
-  InitClientFromParams(client);
-
-  if (IsEnvEnabled("ui_disable_server_certificate_verification")) {
-    client.enable_server_certificate_verification(false);
-  }
-
-  httplib::Headers headers = {{"User-Agent", user_agent}};
-  auto cookie = req.get_header_value("Cookie");
-  if (!cookie.empty()) {
-    headers.emplace("Cookie", cookie);
-  }
-
-  // forward GET to remote URL
-  auto result = client.Get(req.path, req.params, headers);
-  if (!result) {
-    res.status = 500;
-    res.set_content("Could not fetch: '" + req.path + "' from '" + remote_url +
-                        "': " + to_string(result.error()),
-                    "text/plain");
-    return;
-  }
-
-  // Repond with result of forwarded GET
-  res = result.value();
-
-  // If this is the config request, return additional information.
+  // Handle /config endpoint with DuckDB version info
   if (req.path == "/config") {
     res.set_header("X-DuckDB-Version", DuckDB::LibraryVersion());
     res.set_header("X-DuckDB-Platform", DuckDB::Platform());
-    // The UI looks for this to select the appropriate DuckDB mode (HTTP or
-    // Wasm).
     res.set_header("X-DuckDB-UI-Extension-Version", UI_EXTENSION_VERSION);
+    res.set_content("{\"mode\":\"offline\",\"version\":\"" + std::string(DuckDB::LibraryVersion()) + "\"}",
+                    "application/json");
+    return;
   }
 
-  // httplib will set Content-Length, remove it so it is not duplicated.
-  res.headers.erase("Content-Length");
+  // Serve static files from local ui_static directory
+  std::string path = req.path;
+
+  // Default to index.html for root path
+  if (path == "/" || path.empty()) {
+    path = "/index.html";
+  }
+
+  // Try to serve the static file
+  if (ServeStaticFile(path, res)) {
+    return;
+  }
+
+  // If file not found locally, show an error message
+  res.status = 404;
+  res.set_content("File not found: " + path + "\n\nThis is an offline DuckDB UI instance. "
+                  "Make sure the ui_static directory is accessible.\n"
+                  "You can set the DUCKDB_UI_STATIC_PATH environment variable to specify the location.",
+                  "text/plain");
 }
 
 void HttpServer::HandleInterrupt(const httplib::Request &req,

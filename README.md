@@ -6,6 +6,16 @@ This repository contains both the extension, implemented in C++, and some packag
 
 While most of the user interface code is not yet publicly available, more of it will added here over time.
 
+## 🌟 Offline/Airgapped Version
+
+**This fork includes a fully offline version** that can run without any internet connection or external dependencies, making it suitable for:
+- Airgapped systems
+- Secure/isolated environments
+- Systems with restricted internet access
+- Offline development environments
+
+The offline version includes a self-contained UI with all assets bundled locally. See [OFFLINE_SETUP.md](OFFLINE_SETUP.md) for detailed deployment instructions.
+
 ## Extension
 
 The primary structure of this repository is based on the [DuckDB extension template](https://github.com/duckdb/extension-template).
@@ -54,10 +64,23 @@ See the [README](ts/README.md) in that directory for details.
 The extension starts an HTTP server that both serves the UI assets (HTML, JavaScript, etc.)
 and handles requests to run SQL and perform other DuckDB operations.
 
+### Online Mode (Original)
 The server proxies requests for UI assets and fetches them from a remote server.
 By default, this is `https://ui.duckdb.org`, but it can be [overridden](https://duckdb.org/docs/stable/core_extensions/ui.html#remote-url).
 
-The server also exposes a number of HTTP endpoints for performing DuckDB operations.
+### Offline Mode (This Fork)
+**This version serves UI assets from the local `ui_static` directory**, eliminating the need for internet connectivity. All HTML, CSS, and JavaScript files are bundled with the extension, making it suitable for airgapped deployments.
+
+The offline UI provides:
+- SQL query editor with syntax highlighting
+- Result display with tabular formatting
+- Query execution time and row count tracking
+- Error handling and display
+- All functionality without external dependencies
+
+### HTTP Endpoints
+
+The server exposes a number of HTTP endpoints for performing DuckDB operations.
 These include running SQL, interrupting runs, tokenizing SQL text, and receiving events (such as catalog updates).
 For details, see the `HttpServer::Run` method in [http_server.cpp](src/http_server.cpp).
 
