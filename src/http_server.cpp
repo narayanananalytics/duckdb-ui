@@ -274,17 +274,23 @@ void HttpServer::InitClientFromParams(httplib::Client &client) {
 }
 
 std::string HttpServer::GetContentType(const std::string &path) {
-  if (path.ends_with(".html")) return "text/html; charset=utf-8";
-  if (path.ends_with(".css")) return "text/css; charset=utf-8";
-  if (path.ends_with(".js")) return "application/javascript; charset=utf-8";
-  if (path.ends_with(".json")) return "application/json; charset=utf-8";
-  if (path.ends_with(".png")) return "image/png";
-  if (path.ends_with(".jpg") || path.ends_with(".jpeg")) return "image/jpeg";
-  if (path.ends_with(".svg")) return "image/svg+xml";
-  if (path.ends_with(".ico")) return "image/x-icon";
-  if (path.ends_with(".woff")) return "font/woff";
-  if (path.ends_with(".woff2")) return "font/woff2";
-  if (path.ends_with(".ttf")) return "font/ttf";
+  // Helper lambda to check if string ends with suffix (C++17 compatible)
+  auto ends_with = [](const std::string &str, const std::string &suffix) {
+    if (suffix.length() > str.length()) return false;
+    return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+  };
+
+  if (ends_with(path, ".html")) return "text/html; charset=utf-8";
+  if (ends_with(path, ".css")) return "text/css; charset=utf-8";
+  if (ends_with(path, ".js")) return "application/javascript; charset=utf-8";
+  if (ends_with(path, ".json")) return "application/json; charset=utf-8";
+  if (ends_with(path, ".png")) return "image/png";
+  if (ends_with(path, ".jpg") || ends_with(path, ".jpeg")) return "image/jpeg";
+  if (ends_with(path, ".svg")) return "image/svg+xml";
+  if (ends_with(path, ".ico")) return "image/x-icon";
+  if (ends_with(path, ".woff")) return "font/woff";
+  if (ends_with(path, ".woff2")) return "font/woff2";
+  if (ends_with(path, ".ttf")) return "font/ttf";
   return "text/plain";
 }
 

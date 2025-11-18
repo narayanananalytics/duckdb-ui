@@ -89,7 +89,6 @@ private:
 
   static unique_ptr<HttpServer> server_instance;
 };
-;
 
 } // namespace ui
 } // namespace duckdb
